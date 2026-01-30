@@ -1,27 +1,20 @@
-FROM node:20-alpine
-
+﻿FROM node:20-alpine
 WORKDIR /app
+ENV NODE_ENV=development
+ENV NEXT_TELEMETRY_DISABLED=1
 
-# ADD THIS NEW LINE HERE:
-# RUN apk add --no-cache openssl
-RUN apk add --no-cache openssl libc6-compat
-# Copy package files
+RUN apk add --no-cache openssl python3 make g++ libc6-compat
 COPY package.json package-lock.json* ./
+RUN npm install --legacy-peer-deps
 
-# Install dependencies
-RUN npm install
-
-# Copy prisma schema
 COPY prisma ./prisma
-
-# Copy source code
-COPY . .
-
-# Generate Prisma Client
 RUN npx prisma generate
 
-# Expose port
+COPY . .
+RUN npm run build || true
 EXPOSE 3000
 
-# Start development server
+HEALTHCHECK --interval=30s --timeout=3s --start-period=60s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:3000', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"
+
 CMD ["npm", "run", "dev"]
