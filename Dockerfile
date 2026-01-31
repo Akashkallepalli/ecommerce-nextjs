@@ -6,7 +6,7 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies
+# Install ALL dependencies (including devDependencies for build)
 RUN npm install
 
 # Copy source code
@@ -39,4 +39,5 @@ COPY package.json ./
 
 EXPOSE 3000
 
-CMD ["npm", "run", "dev"]
+# Run migrations and start dev server
+CMD ["sh", "-c", "npx prisma migrate deploy && npm run dev"]
