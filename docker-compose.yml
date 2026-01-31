@@ -1,49 +1,54 @@
-# version: '3.8'
+version: '3.8'
 
 services:
   db:
-    image: postgres:16
-    container_name: ecommerce-postgres
+    image: postgres:15
+    restart: always
     environment:
-      POSTGRES_DB: ecommerce
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres123
+      POSTGRES_USER: ${POSTGRES_USER:-user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      POSTGRES_DB: ${POSTGRES_DB:-ecommerce}
     ports:
-      - "5432:5432"
+      - '5432:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    networks:
-      - ecommerce-network
+      - ./prisma/seed-data:/docker-entrypoint-initdb.d
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-user} -d ${POSTGRES_DB:-ecommerce}"]
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - ecommerce-network
 
   app:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: ecommerce-app
-    environment:
-      DATABASE_URL: postgresql://postgres:postgres123@db:5432/ecommerce
-      NEXTAUTH_URL: http://localhost:3000
-      NEXTAUTH_SECRET: your-secret-key-change-this-in-production
-      GITHUB_ID: ${GITHUB_ID}
-      GITHUB_SECRET: ${GITHUB_SECRET}
-      NODE_ENV: development
+    restart: always
     ports:
-      - "3000:3000"
+      - '3000:3000'
     depends_on:
       db:
         condition: service_healthy
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-user}:${POSTGRES_PASSWORD:-password}@db:5432/${POSTGRES_DB:-ecommerce}?schema=public
+      - NEXTAUTH_URL=${NEXTAUTH_URL:-http://localhost:3000}
+      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
+      - GITHUB_ID=${GITHUB_ID}
+      - GITHUB_SECRET=${GITHUB_SECRET}
+      - NODE_ENV=${NODE_ENV:-development}
+    command: >
+      sh -c "npm install && 
+             npx prisma generate && 
+             npx prisma migrate dev --skip-generate && 
+             npm run dev"
     volumes:
       - .:/app
       - /app/node_modules
       - /app/.next
     networks:
       - ecommerce-network
-    command: sh -c "npm install && npx prisma db push --skip-generate && npm run db:seed && npm run dev"
 
 volumes:
   postgres_data:

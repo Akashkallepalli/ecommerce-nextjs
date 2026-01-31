@@ -1,4 +1,6 @@
-// This is your Prisma schema file
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -8,16 +10,7 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String?   @unique
-  emailVerified DateTime?
-  image         String?
-  accounts      Account[]
-  sessions      Session[]
-}
-
+// NextAuth Models
 model Account {
   id                 String  @id @default(cuid())
   userId             String
@@ -45,6 +38,19 @@ model Session {
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  accounts      Account[]
+  sessions      Session[]
+  cart          Cart?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
 model VerificationToken {
   identifier String
   token      String   @unique
@@ -53,12 +59,38 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
+// E-Commerce Models
 model Product {
   id          String   @id @default(cuid())
-  name        String
-  description String
+  name        String   @db.VarChar(255)
+  description String   @db.Text
   price       Float
-  image       String
+  imageUrl    String   @db.Text
+  stock       Int      @default(0)
+  category    String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  cartItems   CartItem[]
+}
+
+model Cart {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items     CartItem[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model CartItem {
+  id        String   @id @default(cuid())
+  quantity  Int      @default(1)
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  cartId    String
+  cart      Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([cartId, productId])
 }

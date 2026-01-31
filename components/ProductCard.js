@@ -1,13 +1,24 @@
 import Link from 'next/link';
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/router';
 import { useState } from 'react';
 
 export default function ProductCard({ product }) {
-  const [loading, setLoading] = useState(false);
+  const { data: session } = useSession();
+  const router = useRouter();
+  const [isAdding, setIsAdding] = useState(false);
 
-  const handleAddToCart = async () => {
-    setLoading(true);
+  const handleAddToCart = async (e) => {
+    e.preventDefault();
+
+    if (!session) {
+      router.push('/api/auth/signin?callbackUrl=/cart');
+      return;
+    }
+
+    setIsAdding(true);
     try {
-      const response = await fetch('/api/cart', {
+      const res = await fetch('/api/cart', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -16,60 +27,60 @@ export default function ProductCard({ product }) {
         }),
       });
 
-      if (response.ok) {
+      if (res.ok) {
         alert('Added to cart!');
       } else {
-        alert('Please sign in first');
+        alert('Failed to add to cart');
       }
     } catch (error) {
-      console.error('Error adding to cart:', error);
+      console.error('Error:', error);
+      alert('An error occurred');
     } finally {
-      setLoading(false);
+      setIsAdding(false);
     }
   };
 
   return (
-    <div
-      className="bg-white rounded-lg shadow hover:shadow-lg transition p-4"
-      data-testid={`product-card-${product.id}`}
-    >
-      <Link href={`/products/${product.id}`}>
-        <img
-          src={product.image}
-          alt={product.name}
-          className="w-full h-48 object-cover rounded-lg cursor-pointer hover:opacity-90"
-          data-testid={`product-image-${product.id}`}
-        />
-      </Link>
-
-      <h3
-        className="mt-4 text-lg font-semibold text-gray-900"
-        data-testid={`product-name-${product.id}`}
+    <Link href={`/products/${product.id}`}>
+      <div
+        data-testid={`product-card-${product.id}`}
+        className="bg-white rounded-lg shadow hover:shadow-lg transition cursor-pointer overflow-hidden"
       >
-        {product.name}
-      </h3>
+        <div className="aspect-square overflow-hidden bg-gray-100">
+          <img
+            src={product.imageUrl}
+            alt={product.name}
+            className="w-full h-full object-cover hover:scale-105 transition"
+          />
+        </div>
 
-      <p className="mt-2 text-sm text-gray-600 line-clamp-2">
-        {product.description}
-      </p>
+        <div className="p-4">
+          <h3 className="font-semibold text-gray-900 mb-1 line-clamp-2">
+            {product.name}
+          </h3>
+          <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+            {product.description}
+          </p>
 
-      <div className="mt-4 flex justify-between items-center">
-        <span
-          className="text-xl font-bold text-blue-600"
-          data-testid={`product-price-${product.id}`}
-        >
-          ${product.price}
-        </span>
-        <button
-          onClick={handleAddToCart}
-          disabled={loading}
-          className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
-          data-testid={`add-to-cart-${product.id}`}
-        >
-          {loading ? '...' : 'Add'}
-        </button>
+          <div className="flex items-center justify-between mb-3">
+            <span className="font-bold text-lg text-blue-600">
+              ${product.price.toFixed(2)}
+            </span>
+            <span className="text-xs text-gray-500">
+              {product.stock > 0 ? `${product.stock} in stock` : 'Out of stock'}
+            </span>
+          </div>
+
+          <button
+            data-testid={`add-to-cart-button-${product.id}`}
+            onClick={handleAddToCart}
+            disabled={product.stock === 0 || isAdding}
+            className="w-full bg-blue-600 text-white py-2 px-3 rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
+          >
+            {isAdding ? 'Adding...' : 'Add to Cart'}
+          </button>
+        </div>
       </div>
-    </div>
+    </Link>
   );
 }
-

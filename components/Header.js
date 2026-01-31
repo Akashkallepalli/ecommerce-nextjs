@@ -1,74 +1,49 @@
-import { signIn, signOut, useSession } from 'next-auth/react';
 import Link from 'next/link';
-import { useRouter } from 'next/router';
+import { useSession, signOut } from 'next-auth/react';
 
 export default function Header() {
   const { data: session } = useSession();
-  const router = useRouter();
 
   return (
     <header className="bg-white shadow">
-      <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
-          {/* Logo */}
-          <Link href="/">
-            <div className="flex items-center cursor-pointer">
-              <span className="text-2xl font-bold text-blue-600">ECart</span>
-            </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        <div className="flex justify-between items-center">
+          <Link href="/" className="text-2xl font-bold text-blue-600">
+            EStore
           </Link>
 
-          {/* Search and Cart */}
-          <div className="flex-1 max-w-md mx-4">
-            <input
-              type="text"
-              placeholder="Search products..."
-              defaultValue={router.query.q || ''}
-              onChange={(e) => {
-                const query = e.target.value;
-                if (query.trim()) {
-                  router.push(`/?q=${encodeURIComponent(query)}`);
-                } else {
-                  router.push('/');
-                }
-              }}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              data-testid="search-input"
-            />
-          </div>
+          <nav className="flex items-center gap-6">
+            <Link href="/" className="text-gray-700 hover:text-gray-900">
+              Products
+            </Link>
 
-          {/* Auth Buttons */}
-          <div className="flex items-center space-x-4">
-            <Link href="/cart">
-              <div className="text-gray-700 hover:text-blue-600 cursor-pointer" data-testid="cart-link">
-                🛒 Cart
-              </div>
+            <Link href="/cart" className="text-gray-700 hover:text-gray-900">
+              Cart
             </Link>
 
             {session ? (
-              <div className="flex items-center space-x-3">
-                <span className="text-sm text-gray-700">
-                  {session.user?.name || session.user?.email}
-                </span>
+              <div className="flex items-center gap-4">
+                <span className="text-gray-700">Hi, {session.user?.name || session.user?.email}</span>
                 <button
-                  onClick={() => signOut()}
-                  className="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
                   data-testid="signout-button"
+                  onClick={() => signOut({ callbackUrl: '/' })}
+                  className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700"
                 >
                   Sign Out
                 </button>
               </div>
             ) : (
-              <button
-                onClick={() => signIn('github')}
-                className="px-3 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800"
+              <Link
                 data-testid="signin-button"
+                href="/api/auth/signin"
+                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
               >
-                Sign In with GitHub
-              </button>
+                Sign In
+              </Link>
             )}
-          </div>
+          </nav>
         </div>
-      </nav>
+      </div>
     </header>
   );
 }

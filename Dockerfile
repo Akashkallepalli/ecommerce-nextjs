@@ -1,20 +1,42 @@
-﻿FROM node:20-alpine
+﻿# Build stage
+FROM node:18-alpine AS builder
+
 WORKDIR /app
-ENV NODE_ENV=development
-ENV NEXT_TELEMETRY_DISABLED=1
 
-RUN apk add --no-cache openssl python3 make g++ libc6-compat
-COPY package.json package-lock.json* ./
-RUN npm install --legacy-peer-deps
+# Copy package files
+COPY package*.json ./
 
-COPY prisma ./prisma
+# Install dependencies
+RUN npm install
+
+# Copy source code
+COPY . .
+
+# Generate Prisma Client
 RUN npx prisma generate
 
-COPY . .
-RUN npm run build || true
-EXPOSE 3000
+# Build Next.js application
+RUN npm run build
 
-HEALTHCHECK --interval=30s --timeout=3s --start-period=60s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:3000', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"
+# Runtime stage
+FROM node:18-alpine
+
+WORKDIR /app
+
+# Install only production dependencies
+COPY package*.json ./
+RUN npm install --only=production
+
+# Copy built application from builder
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+
+# Copy necessary files
+COPY next.config.js ./
+COPY package.json ./
+
+EXPOSE 3000
 
 CMD ["npm", "run", "dev"]

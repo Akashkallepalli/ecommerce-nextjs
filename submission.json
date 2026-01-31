@@ -1,36 +1,6 @@
 {
-  "project": "E-Commerce Catalog Application",
-  "version": "1.0.0",
   "testUser": {
-    "provider": "github",
-    "note": "Use your GitHub account to sign in"
-  },
-  "testingInstructions": {
-    "setup": "docker-compose up --build",
-    "url": "http://localhost:3000",
-    "features": [
-      "Browse products on home page",
-      "Search products using search bar",
-      "View product details",
-      "Sign in with GitHub",
-      "Add products to cart",
-      "View cart items",
-      "Update quantities",
-      "Remove items from cart"
-    ]
-  },
-  "requirements": {
-    "docker": "✓ Docker & Docker Compose",
-    "database": "✓ PostgreSQL with Prisma",
-    "env": "✓ Environment variables",
-    "auth": "✓ NextAuth with GitHub OAuth",
-    "ssr": "✓ Server-side rendering",
-    "api": "✓ API routes for cart",
-    "protected": "✓ Protected routes",
-    "search": "✓ Search functionality",
-    "pagination": "✓ Pagination",
-    "testid": "✓ Data-testid attributes",
-    "validation": "✓ Zod validation",
-    "startup": "✓ Single command startup"
+    "email": "test.user@example.com",
+    "name": "Test User"
   }
 }
