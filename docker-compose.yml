@@ -1,51 +1,54 @@
-services:
-  db:
-    image: postgres:15
-    restart: always
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER:-user}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
-      POSTGRES_DB: ${POSTGRES_DB:-ecommerce}
-    ports:
-      - '5432:5432'
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./prisma/seed-data:/docker-entrypoint-initdb.d
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-user} -d ${POSTGRES_DB:-ecommerce}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - ecommerce-network
+version: '3.8'
 
+services:
   app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    restart: always
+    build: .
+    container_name: ecommerce-app
     ports:
-      - '3000:3000'
+      - "3000:3000"
+    environment:
+  # Node Environment
+      NODE_ENV: production
+  
+  # Database Connection - HARDCODED for local development
+      DATABASE_URL: "postgresql://postgres:postgres@db:5432/ecommerce?schema=public"
+  
+  # NextAuth Configuration
+      NEXTAUTH_SECRET: "YjI4OTJkYWQtMTQ0MC00MmIwLThkYzItZGZlMmQ0Y2Y1OTM1"
+      NEXTAUTH_URL: "http://localhost:3000"
+  
+  # GitHub OAuth (optional)
+      GITHUB_ID: ""
+      GITHUB_SECRET: ""
     depends_on:
       db:
         condition: service_healthy
-    environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-user}:${POSTGRES_PASSWORD:-password}@db:5432/${POSTGRES_DB:-ecommerce}?schema=public
-      NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
-      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
-      GITHUB_ID: ${GITHUB_ID}
-      GITHUB_SECRET: ${GITHUB_SECRET}
-      NODE_ENV: ${NODE_ENV:-development}
-    volumes:
-      - .:/app
-      - /app/node_modules
-      - /app/.next
     networks:
       - ecommerce-network
+    env_file:
+      - .env.local
+
+  db:
+    image: postgres:15-alpine
+    container_name: ecommerce-db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-ecommerce}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - ecommerce-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 volumes:
   postgres_data:
-    driver: local
 
 networks:
   ecommerce-network:
